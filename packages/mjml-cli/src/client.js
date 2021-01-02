@@ -2,19 +2,21 @@ import path from 'path'
 import yargs from 'yargs'
 import { flow, pick, isNil, negate, pickBy } from 'lodash/fp'
 import { isArray, isEmpty, map, get } from 'lodash'
+import { html as htmlBeautify } from 'js-beautify'
+import { minify as htmlMinify } from 'html-minifier'
 
 import mjml2html, { components, initializeType } from 'mjml-core'
 import migrate from 'mjml-migrate'
-import validate from 'mjml-validator'
+import validate, { dependencies } from 'mjml-validator'
 import MJMLParser from 'mjml-parser-xml'
 
+import { version as coreVersion } from 'mjml-core/package.json'
 import readFile, { flatMapPaths } from './commands/readFile'
 import watchFiles from './commands/watchFiles'
 import readStream from './commands/readStream'
 import outputToFile, { isDirectory } from './commands/outputToFile'
 import outputToConsole from './commands/outputToConsole'
 
-import { version as coreVersion } from 'mjml-core/package.json' // eslint-disable-line import/first
 import { version as cliVersion } from '../package.json'
 import DEFAULT_OPTIONS from './helpers/defaultOptions'
 
@@ -22,20 +24,21 @@ export default async () => {
   let EXIT_CODE = 0
   let KEEP_OPEN = false
 
-  const error = msg => {
+  const error = (msg) => {
     console.error('\nCommand line error:') // eslint-disable-line no-console
     console.error(msg) // eslint-disable-line no-console
 
     process.exit(1)
   }
 
-  const pickArgs = args =>
+  const pickArgs = (args) =>
     flow(
       pick(args),
-      pickBy(e => negate(isNil)(e) && !(isArray(e) && isEmpty(e))),
+      pickBy((e) => negate(isNil)(e) && !(isArray(e) && isEmpty(e))),
     )
 
-  const argv = yargs
+  const { argv } = yargs
+    .version(false) // cf. https://github.com/yargs/yargs/issues/961
     .options({
       r: {
         alias: 'read',
@@ -44,7 +47,7 @@ export default async () => {
       },
       m: {
         alias: 'migrate',
-        describe: 'Migrate MJML3 File(s)',
+        describe: 'Migrate MJML3 File(s) (deprecated)',
         type: 'array',
       },
       v: {
@@ -80,7 +83,7 @@ export default async () => {
       },
     })
     .help()
-    .version(`mjml-core: ${coreVersion}\nmjml-cli: ${cliVersion}`).argv
+    .version(`mjml-core: ${coreVersion}\nmjml-cli: ${cliVersion}`)
 
   let juiceOptions
   let minifyOptions
@@ -88,19 +91,22 @@ export default async () => {
   let fonts
 
   try {
-    juiceOptions = argv.c && argv.c.juiceOptions && JSON.parse(argv.c.juiceOptions)
+    juiceOptions =
+      argv.c && argv.c.juiceOptions && JSON.parse(argv.c.juiceOptions)
   } catch (e) {
     error(`Failed to decode JSON for config.juiceOptions argument`)
   }
 
   try {
-    minifyOptions = argv.c && argv.c.minifyOptions && JSON.parse(argv.c.minifyOptions)
+    minifyOptions =
+      argv.c && argv.c.minifyOptions && JSON.parse(argv.c.minifyOptions)
   } catch (e) {
     error(`Failed to decode JSON for config.minifyOptions argument`)
   }
 
   try {
-    juicePreserveTags = argv.c && argv.c.juicePreserveTags && JSON.parse(argv.c.juicePreserveTags)
+    juicePreserveTags =
+      argv.c && argv.c.juicePreserveTags && JSON.parse(argv.c.juicePreserveTags)
   } catch (e) {
     error(`Failed to decode JSON for config.juicePreserveTags argument`)
   }
@@ -110,16 +116,16 @@ export default async () => {
   } catch (e) {
     error(`Failed to decode JSON for config.fonts argument`)
   }
-  
+
   const filePath = argv.c && argv.c.filePath
 
   const config = Object.assign(
     DEFAULT_OPTIONS,
     argv.c,
-    fonts && {fonts},
-    minifyOptions && {minifyOptions},
-    juiceOptions && {juiceOptions},
-    juicePreserveTags && {juicePreserveTags},
+    fonts && { fonts },
+    minifyOptions && { minifyOptions },
+    juiceOptions && { juiceOptions },
+    juicePreserveTags && { juicePreserveTags },
   )
 
   const inputArgs = pickArgs(['r', 'w', 'i', '_', 'm', 'v'])(argv)
@@ -142,7 +148,7 @@ export default async () => {
         argv.o !== '',
       'Need an output option when watching files',
     ],
-  ].forEach(v => (v[0] ? error(v[1]) : null))
+  ].forEach((v) => (v[0] ? error(v[1]) : null))
 
   const inputOpt = Object.keys(inputArgs)[0]
   const outputOpt = Object.keys(outputArgs)[0] || 's'
@@ -157,7 +163,7 @@ export default async () => {
     case 'v':
     case 'm':
     case '_': {
-      flatMapPaths(inputFiles).forEach(file => {
+      flatMapPaths(inputFiles).forEach((file) => {
         inputs.push(readFile(file))
       })
 
@@ -168,7 +174,7 @@ export default async () => {
       break
     }
     case 'w':
-      watchFiles(inputFiles, argv)
+      watchFiles(inputFiles, { ...argv, config })
       KEEP_OPEN = true
       break
     case 'i':
@@ -181,21 +187,52 @@ export default async () => {
   const convertedStream = []
   const failedStream = []
 
-  inputs.forEach(i => {
+  inputs.forEach((i) => {
     try {
       let compiled
       switch (inputOpt) {
-        case 'm': // eslint-disable-line no-case-declarations
+        case 'm':
           compiled = { html: migrate(i.mjml, { beautify: true }) }
           break
-        case 'v': // eslint-disable-line no-case-declarations
-          const mjmlJson = MJMLParser(i.mjml, { components })
+        case 'v': // eslint-disable-next-line no-case-declarations
+          const mjmlJson = MJMLParser(i.mjml, {
+            components,
+            filePath: filePath || i.file,
+            actualPath: i.file,
+          })
           compiled = {
-            errors: validate(mjmlJson, { components, initializeType }),
+            errors: validate(mjmlJson, { dependencies, components, initializeType }),
           }
           break
-        default:
-          compiled = mjml2html(i.mjml, { ...config, filePath: filePath || i.file })
+
+        default: {
+          const beautify = config.beautify && config.beautify !== 'false'
+          const minify = config.minify && config.minify !== 'false'
+          delete config.minify
+          delete config.beautify
+          compiled = mjml2html(i.mjml, {
+            ...config,
+            filePath: filePath || i.file,
+            actualPath: i.file,
+          })
+          if (beautify) {
+            compiled.html = htmlBeautify(compiled.html, {
+              indent_size: 2,
+              wrap_attributes_indent_size: 2,
+              max_preserve_newline: 0,
+              preserve_newlines: false,
+            })
+          }
+          if (minify) {
+            compiled.html = htmlMinify(compiled.html, {
+              collapseWhitespace: true,
+              minifyCSS: false,
+              caseSensitive: true,
+              removeEmptyAttributes: true,
+              ...config.minifyOptions,
+            })
+          }
+        }
       }
 
       convertedStream.push({ ...i, compiled })
@@ -205,14 +242,13 @@ export default async () => {
     }
   })
 
-  convertedStream.forEach(s => {
+  convertedStream.forEach((s) => {
     if (get(s, 'compiled.errors.length')) {
       console.error(map(s.compiled.errors, 'formattedMessage').join('\n')) // eslint-disable-line no-console
     }
   })
 
   failedStream.forEach(({ error, file }) => {
-    // eslint-disable-line array-callback-return
     console.error(`${file ? `File: ${file}\n` : null}${error}`) // eslint-disable-line no-console
 
     if (config.stack) {
@@ -223,7 +259,7 @@ export default async () => {
   if (inputOpt === 'v') {
     const isInvalid =
       failedStream.length ||
-      convertedStream.some(s => !!get(s, 'compiled.errors.length'))
+      convertedStream.some((s) => !!get(s, 'compiled.errors.length'))
 
     if (isInvalid) {
       error('Validation failed')
@@ -239,7 +275,7 @@ export default async () => {
 
   switch (outputOpt) {
     case 'o': {
-      if (inputs.length > 1 && (!isDirectory(argv.o) && argv.o !== '')) {
+      if (inputs.length > 1 && !isDirectory(argv.o) && argv.o !== '') {
         error(
           `Multiple input files, but output option should be either an existing directory or an empty string: ${argv.o} given`,
         )
@@ -266,8 +302,8 @@ export default async () => {
     }
     case 's': {
       Promise.all(convertedStream.map(outputToConsole))
-        .then(() => process.exitCode = EXIT_CODE) // eslint-disable-line no-return-assign
-        .catch(() => process.exitCode = 1) // eslint-disable-line no-return-assign
+        .then(() => (process.exitCode = EXIT_CODE)) // eslint-disable-line no-return-assign
+        .catch(() => (process.exitCode = 1)) // eslint-disable-line no-return-assign
       break
     }
     default:

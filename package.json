@@ -3,31 +3,32 @@
   "private": true,
   "scripts": {
     "build:watch": "lerna run build --parallel -- -- -w",
-    "build": "lerna run build --parallel",
+    "build": "lerna run build --parallel --ignore mjml-browser",
+    "build-browser": "cd packages/mjml-browser && yarn build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "postinstall": "lerna bootstrap",
     "prettier": "prettier --write \"packages/**/{src,bin}/**/*.?(js|json)\""
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^7.2.3",
-    "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-plugin-transform-decorators-legacy": "^1.3.4",
-    "babel-plugin-transform-regenerator": "^6.26.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.6.0",
-    "babel-preset-stage-0": "^6.24.1",
-    "babel-register": "^6.26.0",
-    "es6-promisify": "^5.0.0",
-    "eslint": "^4.5.0",
-    "eslint-config-airbnb-base": "^11.3.2",
-    "eslint-config-prettier": "^2.6.0",
-    "eslint-plugin-import": "^2.7.0",
-    "lerna": "^3.16.4",
-    "opn": "^5.1.0",
-    "prettier": "^1.7.3",
-    "rimraf": "^2.6.1"
+    "@babel/core": "^7.8.7",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/plugin-transform-runtime": "^7.8.3",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/register": "^7.8.6",
+    "babel-eslint": "^10.1.0",
+    "babel-plugin-add-module-exports": "^1.0.2",
+    "babel-plugin-lodash": "^3.3.4",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.21.1",
+    "lerna": "^3.22.1",
+    "open": "^7.3.0",
+    "prettier": "^2.0.5",
+    "rimraf": "^3.0.2"
   }
 }

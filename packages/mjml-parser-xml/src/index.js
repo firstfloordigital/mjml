@@ -1,19 +1,17 @@
-import htmlparser from 'htmlparser2'
+import { Parser } from 'htmlparser2'
 
-import isObject from 'lodash/isObject'
-import findLastIndex from 'lodash/findLastIndex'
-import find from 'lodash/find'
+import { isObject, findLastIndex, find } from 'lodash'
+import { filter, map, flow } from 'lodash/fp'
 import path from 'path'
 import fs from 'fs'
-import filter from 'lodash/fp/filter'
-import map from 'lodash/fp/map'
-import flow from 'lodash/fp/flow'
 
 import cleanNode from './helpers/cleanNode'
 import convertBooleansOnAttrs from './helpers/convertBooleansOnAttrs'
 import setEmptyAttributes from './helpers/setEmptyAttributes'
 
-const indexesForNewLine = xml => {
+const isNode = require('detect-node')
+
+const indexesForNewLine = (xml) => {
   const regex = /\n/gi
   const indexes = [0]
 
@@ -35,15 +33,26 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
     convertBooleans = true,
     keepComments = true,
     filePath = '.',
+    actualPath = '.',
     ignoreIncludes = false,
+    preprocessors = [],
   } = options
 
   const endingTags = flow(
-    filter(component => component.endingTag),
-    map(component => component.getTagName()),
+    filter((component) => component.endingTag),
+    map((component) => component.getTagName()),
   )({ ...components })
 
-  const cwd = filePath ? path.dirname(filePath) : process.cwd()
+  let cwd = process.cwd()
+
+  if (isNode && filePath) {
+    try {
+      const isDir = fs.lstatSync(filePath).isDirectory()
+      cwd = isDir ? filePath : path.dirname(filePath)
+    } catch (e) {
+      throw new Error('Specified filePath does not exist')
+    }
+  }
 
   let mjml = null
   let cur = null
@@ -69,15 +78,17 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
       const newNode = {
         line,
         file,
-        absoluteFilePath: path.resolve(cwd, filePath),
+        absoluteFilePath: path.resolve(cwd, actualPath),
         parent: cur,
         tagName: 'mj-raw',
         content: `<!-- mj-include fails to read file : ${file} at ${partialPath} -->`,
         children: [],
-        errors: [{
-          type: 'include',
-          params: { file, partialPath },
-        }],
+        errors: [
+          {
+            type: 'include',
+            params: { file, partialPath },
+          },
+        ],
       }
       cur.children.push(newNode)
 
@@ -94,6 +105,7 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
       {
         ...options,
         filePath: partialPath,
+        actualPath: partialPath,
       },
       [
         ...cur.includedIn,
@@ -105,7 +117,7 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
     )
 
     const bindToTree = (children, tree = cur) =>
-      children.map(c => ({ ...c, parent: tree }))
+      children.map((c) => ({ ...c, parent: tree }))
 
     if (partialMjml.tagName !== 'mjml') {
       return
@@ -118,14 +130,14 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
       const boundChildren = bindToTree(body.children)
       cur.children = [...cur.children, ...boundChildren]
     }
-    
+
     if (head) {
       let curHead = findTag('mj-head', mjml)
 
       if (!curHead) {
         mjml.children.push({
-          file: filePath,
-          absoluteFilePath: path.resolve(cwd, filePath),
+          file: actualPath,
+          absoluteFilePath: path.resolve(cwd, actualPath),
           parent: mjml,
           tagName: 'mj-head',
           children: [],
@@ -138,12 +150,12 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
       const boundChildren = bindToTree(head.children, curHead)
       curHead.children = [...curHead.children, ...boundChildren]
     }
-    
+
     // must restore cur to the cur before include started
     cur = curBeforeInclude
   }
 
-  const parser = new htmlparser.Parser(
+  const parser = new Parser(
     {
       onopentag: (name, attrs) => {
         const isAnEndingTag = endingTags.indexOf(name) !== -1
@@ -156,15 +168,19 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
         if (isAnEndingTag) {
           inEndingTag += 1
 
-          if (inEndingTag === 1) { // we're entering endingTag
+          if (inEndingTag === 1) {
+            // we're entering endingTag
             currentEndingTagIndexes.startIndex = parser.startIndex
             currentEndingTagIndexes.endIndex = parser.endIndex
           }
         }
 
-        const line = findLastIndex(lineIndexes, i => i <= parser.startIndex) + 1
+        const line =
+          findLastIndex(lineIndexes, (i) => i <= parser.startIndex) + 1
 
-        if (name === 'mj-include' && !ignoreIncludes) {
+        if (name === 'mj-include') {
+          if (ignoreIncludes || !isNode) return
+
           inInclude = true
           handleInclude(decodeURIComponent(attrs.path), line)
           return
@@ -176,8 +192,8 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
         }
 
         const newNode = {
-          file: filePath,
-          absoluteFilePath: path.resolve(cwd, filePath),
+          file: actualPath,
+          absoluteFilePath: isNode ? path.resolve(cwd, actualPath) : actualPath,
           line,
           includedIn,
           parent: cur,
@@ -194,15 +210,24 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
 
         cur = newNode
       },
-      onclosetag: name => {
+      onclosetag: (name) => {
         if (endingTags.indexOf(name) !== -1) {
           inEndingTag -= 1
 
-          if (!inEndingTag) { // we're getting out of endingTag
+          if (!inEndingTag) {
+            // we're getting out of endingTag
             // if self-closing tag we don't get the content
             if (!isSelfClosing(currentEndingTagIndexes, parser)) {
-              const partialVal = xml.substring(currentEndingTagIndexes.endIndex + 1, parser.endIndex).trim()
-              const val = partialVal.substring(0, partialVal.lastIndexOf(`</${name}`))
+              const partialVal = xml
+                .substring(
+                  currentEndingTagIndexes.endIndex + 1,
+                  parser.endIndex,
+                )
+                .trim()
+              const val = partialVal.substring(
+                0,
+                partialVal.lastIndexOf(`</${name}`),
+              )
 
               if (val) cur.content = val.trim()
             }
@@ -214,24 +239,24 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
         if (inInclude) {
           inInclude = false
         }
-        
+
         // for includes, setting cur is handled in handleInclude because when there is
         // only mj-head in include it doesn't create any elements, so setting back to parent is wrong
         if (name !== 'mj-include') cur = (cur && cur.parent) || null
       },
-      ontext: text => {
+      ontext: (text) => {
         if (inEndingTag > 0) return
 
         if (text && text.trim() && cur) {
           cur.content = `${(cur && cur.content) || ''}${text.trim()}`.trim()
         }
       },
-      oncomment: data => {
+      oncomment: (data) => {
         if (inEndingTag > 0) return
 
         if (cur && keepComments) {
           cur.children.push({
-            line: findLastIndex(lineIndexes, i => i <= parser.startIndex) + 1,
+            line: findLastIndex(lineIndexes, (i) => i <= parser.startIndex) + 1,
             tagName: 'mj-raw',
             content: `<!-- ${data.trim()} -->`,
             includedIn,
@@ -246,6 +271,9 @@ export default function MJMLParser(xml, options = {}, includedIn = []) {
       lowerCaseAttributeNames: false,
     },
   )
+
+  // Apply preprocessors to raw xml
+  xml = flow(preprocessors)(xml)
 
   parser.write(xml)
   parser.end()

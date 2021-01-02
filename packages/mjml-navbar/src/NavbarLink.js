@@ -1,20 +1,23 @@
 import { BodyComponent, suffixCssClasses } from 'mjml-core'
-import url from 'url'
 
 import conditionalTag from 'mjml-core/lib/helpers/conditionalTag'
 
 export default class MjNavbarLink extends BodyComponent {
+  static componentName = 'mj-navbar-link'
+
   static endingTag = true
 
   static allowedAttributes = {
     color: 'color',
     'font-family': 'string',
     'font-size': 'unit(px)',
+    'font-style': 'string',
     'font-weight': 'string',
     href: 'string',
     name: 'string',
     target: 'string',
     rel: 'string',
+    'letter-spacing': 'unitWithNegative(px,em)',
     'line-height': 'unit(px,%,)',
     'padding-bottom': 'unit(px,%)',
     'padding-left': 'unit(px,%)',
@@ -44,7 +47,9 @@ export default class MjNavbarLink extends BodyComponent {
         color: this.getAttribute('color'),
         'font-family': this.getAttribute('font-family'),
         'font-size': this.getAttribute('font-size'),
+        'font-style': this.getAttribute('font-style'),
         'font-weight': this.getAttribute('font-weight'),
+        'letter-spacing': this.getAttribute('letter-spacing'),
         'line-height': this.getAttribute('line-height'),
         'text-decoration': this.getAttribute('text-decoration'),
         'text-transform': this.getAttribute('text-transform'),
@@ -67,7 +72,7 @@ export default class MjNavbarLink extends BodyComponent {
   renderContent() {
     const href = this.getAttribute('href')
     const navbarBaseUrl = this.getAttribute('navbarBaseUrl')
-    const link = navbarBaseUrl ? url.resolve(navbarBaseUrl, href) : href
+    const link = navbarBaseUrl ? `${navbarBaseUrl}${href}` : href
 
     const cssClass = this.getAttribute('css-class')
       ? ` ${this.getAttribute('css-class')}`

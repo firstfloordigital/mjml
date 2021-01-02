@@ -1,6 +1,8 @@
 import { BodyComponent, suffixCssClasses } from 'mjml-core'
 
 export default class MjCarouselImage extends BodyComponent {
+  static componentName = 'mj-carousel-image'
+
   static endingTag = true
 
   static allowedAttributes = {
@@ -98,8 +100,9 @@ export default class MjCarouselImage extends BodyComponent {
     return `
       <input
         ${this.htmlAttributes({
-          class: `mj-carousel-radio mj-carousel-${carouselId}-radio mj-carousel-${carouselId}-radio-${index +
-            1}`,
+          class: `mj-carousel-radio mj-carousel-${carouselId}-radio mj-carousel-${carouselId}-radio-${
+            index + 1
+          }`,
           checked: index === 0 ? 'checked' : null,
           type: 'radio',
           name: `mj-carousel-radio-${carouselId}`,
@@ -135,9 +138,11 @@ export default class MjCarouselImage extends BodyComponent {
           style: index === 0 ? 'images.firstImageDiv' : 'images.otherImageDiv',
         })}
       >
-        ${href
-          ? `<a href=${href} rel=${rel} target="_blank">${image}</a>`
-          : image}
+        ${
+          href
+            ? `<a href=${href} rel=${rel} target="_blank">${image}</a>`
+            : image
+        }
       </div>
     `
   }

@@ -1,10 +1,12 @@
-import min from 'lodash/min'
+import { min } from 'lodash'
 
 import { BodyComponent } from 'mjml-core'
 
 import widthParser from 'mjml-core/lib/helpers/widthParser'
 
 export default class MjImage extends BodyComponent {
+  static componentName = 'mj-image'
+
   static tagOmission = true
 
   static allowedAttributes = {
@@ -13,6 +15,7 @@ export default class MjImage extends BodyComponent {
     name: 'string',
     src: 'string',
     srcset: 'string',
+    sizes: 'string',
     title: 'string',
     rel: 'string',
     align: 'enum(left,center,right)',
@@ -34,6 +37,7 @@ export default class MjImage extends BodyComponent {
     height: 'unit(px,auto)',
     'max-height': 'unit(px,%)',
     'font-size': 'unit(px)',
+    usemap: 'string',
   }
 
   static defaultAttributes = {
@@ -54,10 +58,10 @@ export default class MjImage extends BodyComponent {
     return {
       img: {
         border: this.getAttribute('border'),
-        'border-left': this.getAttribute('left'),
-        'border-right': this.getAttribute('right'),
-        'border-top': this.getAttribute('top'),
-        'border-bottom': this.getAttribute('bottom'),
+        'border-left': this.getAttribute('border-left'),
+        'border-right': this.getAttribute('border-right'),
+        'border-top': this.getAttribute('border-top'),
+        'border-bottom': this.getAttribute('border-bottom'),
         'border-radius': this.getAttribute('border-radius'),
         display: 'block',
         outline: 'none',
@@ -84,12 +88,12 @@ export default class MjImage extends BodyComponent {
 
   getContentWidth() {
     const width = this.getAttribute('width')
-                ? parseInt(this.getAttribute('width'), 10)
-                : Infinity
+      ? parseInt(this.getAttribute('width'), 10)
+      : Infinity
 
     const { box } = this.getBoxWidths()
 
-    return min([ box, width ])
+    return min([box, width])
   }
 
   renderImage() {
@@ -102,9 +106,11 @@ export default class MjImage extends BodyComponent {
           height: height && (height === 'auto' ? height : parseInt(height, 10)),
           src: this.getAttribute('src'),
           srcset: this.getAttribute('srcset'),
+          sizes: this.getAttribute('sizes'),
           style: 'img',
           title: this.getAttribute('title'),
           width: this.getContentWidth(),
+          usemap: this.getAttribute('usemap'),
         })}
       />
     `
@@ -127,7 +133,7 @@ export default class MjImage extends BodyComponent {
     return img
   }
 
-  headStyle = breakpoint => `
+  headStyle = (breakpoint) => `
     @media only screen and (max-width:${breakpoint}) {
       table.mj-full-width-mobile { width: 100% !important; }
       td.mj-full-width-mobile { width: auto !important; }
@@ -143,20 +149,18 @@ export default class MjImage extends BodyComponent {
           cellspacing: '0',
           role: 'presentation',
           style: 'table',
-          class:
-            this.getAttribute('fluid-on-mobile')
-              ? 'mj-full-width-mobile'
-              : null,
+          class: this.getAttribute('fluid-on-mobile')
+            ? 'mj-full-width-mobile'
+            : null,
         })}
       >
         <tbody>
           <tr>
             <td ${this.htmlAttributes({
               style: 'td',
-              class:
-                this.getAttribute('fluid-on-mobile')
-                  ? 'mj-full-width-mobile'
-                  : null,
+              class: this.getAttribute('fluid-on-mobile')
+                ? 'mj-full-width-mobile'
+                : null,
             })}>
               ${this.renderImage()}
             </td>

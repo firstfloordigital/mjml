@@ -1,4 +1,4 @@
-## mjml-social
+## mj-social
 
 <p align="center">
   <img src="https://cloud.githubusercontent.com/assets/6558790/12751360/0c78ce48-c9bd-11e5-98ca-4a2ac9e6341b.png" alt="desktop" style="width: 250px;"/>
@@ -82,7 +82,6 @@ href                        | url         | button redirection url        | none
 icon-height                 | percent/px  | icon height, overrides icon-size | icon-size
 icon-size                   | percent/px  | icon size (width and height)  | 20px
 line-height                 | percent/px  | space between lines           | 22px
-mode                        | string      | vertical/horizontal           | horizontal
 name                        | string      | social network name, see supported list below | N/A
 padding                     | px          | supports up to 4 parameters                       | 4px
 padding-bottom              | px          | bottom offset                    | n/a
@@ -91,10 +90,14 @@ padding-right               | px          | right offset                       |
 padding-top                 | px          | top offset                         | n/a
 icon-padding                | px          | padding around the icon       | 0px
 text-padding                | px          | padding around the text       | 4px 4px 4px 0
+sizes                       | media query & width | set icon width based on query | n/a
 src                         | url         | image source                  | Each social `name` has its own default
+srcset                      | url & width | set a different image source based on the viewport | n/a
+rel                         | string      | specify the rel attribute for the link    | n/a
 target                      | string      | link target                   | \_blank
 title                       | string      | img title attribute           | none
 text-decoration             | string      | underline/overline/none       | none
+vertical-align              | string      | top/middle/bottom             | middle
 
 Supported networks with a share url:  
 - facebook  

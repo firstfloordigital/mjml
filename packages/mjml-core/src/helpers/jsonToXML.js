@@ -5,12 +5,12 @@ const jsonToXML = ({ tagName, attributes, children, content }) => {
       : content || ''
 
   const stringAttrs = Object.keys(attributes)
-    .map(attr => `${attr}="${attributes[attr]}"`)
+    .map((attr) => `${attr}="${attributes[attr]}"`)
     .join(' ')
 
-  return `<${tagName}${stringAttrs === ''
-    ? '>'
-    : ` ${stringAttrs}>`}${subNode}</${tagName}>`
+  return `<${tagName}${
+    stringAttrs === '' ? '>' : ` ${stringAttrs}>`
+  }${subNode}</${tagName}>`
 }
 
 export default jsonToXML

@@ -3,6 +3,8 @@ import { BodyComponent } from 'mjml-core'
 import widthParser from 'mjml-core/lib/helpers/widthParser'
 
 export default class MjDivider extends BodyComponent {
+  static componentName = 'mj-divider'
+
   static tagOmission = true
 
   static allowedAttributes = {
@@ -16,6 +18,7 @@ export default class MjDivider extends BodyComponent {
     'padding-right': 'unit(px,%)',
     'padding-top': 'unit(px,%)',
     width: 'unit(px,%)',
+    align: 'enum(left,center,right)',
   }
 
   static defaultAttributes = {
@@ -24,15 +27,22 @@ export default class MjDivider extends BodyComponent {
     'border-width': '4px',
     padding: '10px 25px',
     width: '100%',
+    align: 'center',
   }
 
   getStyles() {
+    let computeAlign = '0px auto'
+    if (this.getAttribute('align') === 'left') {
+      computeAlign = '0px'
+    } else if (this.getAttribute('align') === 'right') {
+      computeAlign = '0px 0px 0px auto'
+    }
     const p = {
       'border-top': ['style', 'width', 'color']
-        .map(attr => this.getAttribute(`border-${attr}`))
+        .map((attr) => this.getAttribute(`border-${attr}`))
         .join(' '),
       'font-size': '1px',
-      margin: '0px auto',
+      margin: computeAlign,
       width: this.getAttribute('width'),
     }
 
@@ -57,10 +67,10 @@ export default class MjDivider extends BodyComponent {
 
     switch (unit) {
       case '%':
-        return `${parseInt(containerWidth, 10) *
-          parseInt(parsedWidth, 10) /
-          100 -
-          paddingSize}px`
+        return `${
+          (parseInt(containerWidth, 10) * parseInt(parsedWidth, 10)) / 100 -
+          paddingSize
+        }px`
       case 'px':
         return width
       default:
@@ -73,7 +83,7 @@ export default class MjDivider extends BodyComponent {
       <!--[if mso | IE]>
         <table
           ${this.htmlAttributes({
-            align: 'center',
+            align: this.getAttribute('align'),
             border: '0',
             cellpadding: '0',
             cellspacing: '0',

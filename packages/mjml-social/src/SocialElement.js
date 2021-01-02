@@ -10,7 +10,7 @@ const defaultSocialNetworks = {
     src: `${IMG_BASE_URL}facebook.png`,
   },
   twitter: {
-    'share-url': 'https://twitter.com/home?status=[[URL]]',
+    'share-url': 'https://twitter.com/intent/tweet?url=[[URL]]',
     'background-color': '#55acee',
     src: `${IMG_BASE_URL}twitter.png`,
   },
@@ -49,7 +49,8 @@ const defaultSocialNetworks = {
   },
   tumblr: {
     src: `${IMG_BASE_URL}tumblr.png`,
-    'share-url': 'https://www.tumblr.com/widgets/share/tool?canonicalUrl=[[URL]]',
+    'share-url':
+      'https://www.tumblr.com/widgets/share/tool?canonicalUrl=[[URL]]',
     'background-color': '#344356',
   },
   github: {
@@ -79,7 +80,6 @@ const defaultSocialNetworks = {
   },
 }
 
-
 each(defaultSocialNetworks, (val, key) => {
   defaultSocialNetworks[`${key}-noshare`] = {
     ...val,
@@ -88,6 +88,8 @@ each(defaultSocialNetworks, (val, key) => {
 })
 
 export default class MjSocialElement extends BodyComponent {
+  static componentName = 'mj-social-element'
+
   static endingTag = true
 
   static allowedAttributes = {
@@ -112,10 +114,13 @@ export default class MjSocialElement extends BodyComponent {
     padding: 'unit(px,%){1,4}',
     'text-padding': 'unit(px,%){1,4}',
     src: 'string',
+    srcset: 'string',
+    sizes: 'string',
     alt: 'string',
     title: 'string',
     target: 'string',
     'text-decoration': 'string',
+    'vertical-align': 'enum(top,middle,bottom)',
   }
 
   static defaultAttributes = {
@@ -129,6 +134,7 @@ export default class MjSocialElement extends BodyComponent {
     'text-padding': '4px 4px 4px 0',
     target: '_blank',
     'text-decoration': 'none',
+    'vertical-align': 'middle',
   }
 
   getStyles() {
@@ -141,6 +147,7 @@ export default class MjSocialElement extends BodyComponent {
     return {
       td: {
         padding: this.getAttribute('padding'),
+        'vertical-align': this.getAttribute('vertical-align'),
       },
       table: {
         background: backgroundColor,
@@ -161,7 +168,6 @@ export default class MjSocialElement extends BodyComponent {
       tdText: {
         'vertical-align': 'middle',
         padding: this.getAttribute('text-padding'),
-
       },
       text: {
         color: this.getAttribute('color'),
@@ -186,6 +192,8 @@ export default class MjSocialElement extends BodyComponent {
     const attrs = [
       'icon-size',
       'icon-height',
+      'srcset',
+      'sizes',
       'src',
       'background-color',
     ].reduce(
@@ -205,11 +213,13 @@ export default class MjSocialElement extends BodyComponent {
   render() {
     const {
       src,
+      srcset,
+      sizes,
       href,
       'icon-size': iconSize,
       'icon-height': iconHeight,
     } = this.getSocialAttributes()
-    
+
     const hasLink = !!this.getAttribute('href')
 
     return `
@@ -230,12 +240,14 @@ export default class MjSocialElement extends BodyComponent {
           >
             <tr>
               <td ${this.htmlAttributes({ style: 'icon' })}>
-                ${hasLink ?
-                  `<a ${this.htmlAttributes({
-                    href,
-                    rel: this.getAttribute('rel'),
-                    target: this.getAttribute('target'),
-                  })}>` : ''
+                ${
+                  hasLink
+                    ? `<a ${this.htmlAttributes({
+                        href,
+                        rel: this.getAttribute('rel'),
+                        target: this.getAttribute('target'),
+                      })}>`
+                    : ''
                 }
                     <img
                       ${this.htmlAttributes({
@@ -245,38 +257,39 @@ export default class MjSocialElement extends BodyComponent {
                         src,
                         style: 'img',
                         width: parseInt(iconSize, 10),
+                        sizes,
+                        srcset,
                       })}
                     />
-                  ${hasLink ?
-                    `</a>` : ''
-                  }
+                  ${hasLink ? `</a>` : ''}
                 </td>
               </tr>
           </table>
         </td>
-        ${this.getContent()
-          ? `
+        ${
+          this.getContent()
+            ? `
           <td ${this.htmlAttributes({ style: 'tdText' })}>
-            ${hasLink ?
-              `<a
+            ${
+              hasLink
+                ? `<a
                 ${this.htmlAttributes({
                   href,
                   style: 'text',
                   rel: this.getAttribute('rel'),
                   target: this.getAttribute('target'),
                 })}>`
-              :  `<span
+                : `<span
                     ${this.htmlAttributes({
                       style: 'text',
                     })}>`
             }
               ${this.getContent()}
-            ${hasLink ?
-              `</a>` : '</span>'
-            }
+            ${hasLink ? `</a>` : '</span>'}
           </td>
           `
-          : ''}
+            : ''
+        }
       </tr>
     `
   }

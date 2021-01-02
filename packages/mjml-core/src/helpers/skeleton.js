@@ -30,7 +30,7 @@ export default function skeleton(options) {
         <title>
           ${title}
         </title>
-        <!--[if !mso]><!-- -->
+        <!--[if !mso]><!-->
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <!--<![endif]-->
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -69,14 +69,16 @@ export default function skeleton(options) {
           '',
         )}
         </style>
-        ${style && style.length > 0
-          ? `<style type="text/css">${style.join('')}</style>`
-          : ''}
+        ${
+          style && style.length > 0
+            ? `<style type="text/css">${style.join('')}</style>`
+            : ''
+        }
         ${headRaw.filter(negate(isNil)).join('\n')}
       </head>
-      <body${backgroundColor === ''
-        ? ''
-        : ` style="background-color:${backgroundColor};"`}>
+      <body style="word-spacing:normal;${
+        backgroundColor ? `background-color:${backgroundColor};` : ''
+      }">
         ${buildPreview(preview)}
         ${content}
       </body>

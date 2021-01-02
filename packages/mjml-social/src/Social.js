@@ -1,9 +1,11 @@
 import { BodyComponent } from 'mjml-core'
 
 export default class MjSocial extends BodyComponent {
+  static componentName = 'mj-social'
+
   static allowedAttributes = {
     align: 'enum(left,right,center)',
-    'border-radius': 'unit(px)',
+    'border-radius': 'unit(px,%)',
     'container-background-color': 'color',
     color: 'color',
     'font-family': 'string',
@@ -41,7 +43,8 @@ export default class MjSocial extends BodyComponent {
     'text-decoration': 'none',
   }
 
-  getStyles() { // eslint-disable-line class-methods-use-this
+  // eslint-disable-next-line class-methods-use-this
+  getStyles() {
     return {
       tableVertical: {
         margin: '0px',
@@ -92,7 +95,7 @@ export default class MjSocial extends BodyComponent {
       <![endif]-->
       ${this.renderChildren(children, {
         attributes: this.getSocialElementAttributes(),
-        renderer: component => `
+        renderer: (component) => `
             <!--[if mso | IE]>
               <td>
             <![endif]-->
@@ -145,9 +148,11 @@ export default class MjSocial extends BodyComponent {
 
   render() {
     return `
-      ${this.getAttribute('mode') === 'horizontal'
-        ? this.renderHorizontal()
-        : this.renderVertical()}
+      ${
+        this.getAttribute('mode') === 'horizontal'
+          ? this.renderHorizontal()
+          : this.renderVertical()
+      }
     `
   }
 }

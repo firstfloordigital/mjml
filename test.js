@@ -1,4 +1,4 @@
-require('babel-register')
+require('@babel/register')
 
 const mjml2html = require('./packages/mjml/src/index')
 
@@ -43,7 +43,7 @@ if (process.argv.includes('--output')) {
 }
 
 if (process.argv.includes('--open')) {
-  const opn = require('opn')
+  const open = require('open')
   const path = require('path')
   const fs = require('fs')
 
@@ -51,7 +51,5 @@ if (process.argv.includes('--open')) {
 
   fs.writeFileSync(testFile, html)
 
-  opn(testFile, {
-    wait: false,
-  })
+  open(testFile)
 }

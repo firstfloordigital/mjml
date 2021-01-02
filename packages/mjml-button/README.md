@@ -1,10 +1,15 @@
-## mjml-button
+## mj-button
 
 <p align="center">
   <img src="https://cloud.githubusercontent.com/assets/6558790/12751346/fd993192-c9bc-11e5-8c91-37d616bf5874.png" alt="desktop" width="150px" />
 </p>
 
 Displays a customizable button.
+
+<aside class="notice">
+  The `mj-button` won't be fully clickable because of client support.
+  See discussion at [Issue #359](https://github.com/mjmlio/mjml/issues/359).
+</aside>
 
 ```xml
 <mjml>
@@ -44,9 +49,9 @@ font-size                   | px          | text size                           
 font-style                  | string      | normal/italic/oblique                            | n/a
 font-weight                 | number      | text thickness                                   | normal
 height                      | px          | button height                                    | n/a
-letter-spacing              | px          | letter spacing                                   | none
 href                        | link        | link to be triggered when the button is clicked  | n/a
 inner-padding               | px          | inner button padding                             | 10px 25px
+letter-spacing              | px,em       | letter-spacing                                   | n/a
 line-height                 | px/%/none   | line-height on link                              | 120%
 padding                     | px          | supports up to 4 parameters                      | 10px 25px
 padding-bottom              | px          | bottom offset                                    | n/a
@@ -60,4 +65,3 @@ text-decoration             | string      | underline/overline/none             
 text-transform              | string      | capitalize/uppercase/lowercase                   | none
 vertical-align              | string      | vertical alignment                               | middle
 width                       | px          | button width                                     | n/a
-

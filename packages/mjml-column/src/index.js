@@ -3,6 +3,8 @@ import { BodyComponent } from 'mjml-core'
 import widthParser from 'mjml-core/lib/helpers/widthParser'
 
 export default class MjColumn extends BodyComponent {
+  static componentName = 'mj-column'
+
   static allowedAttributes = {
     'background-color': 'color',
     border: 'string',
@@ -12,10 +14,17 @@ export default class MjColumn extends BodyComponent {
     'border-right': 'string',
     'border-top': 'string',
     direction: 'enum(ltr,rtl)',
+    'inner-background-color': 'color',
     'padding-bottom': 'unit(px,%)',
     'padding-left': 'unit(px,%)',
     'padding-right': 'unit(px,%)',
     'padding-top': 'unit(px,%)',
+    'inner-border': 'string',
+    'inner-border-bottom': 'string',
+    'inner-border-left': 'string',
+    'inner-border-radius': 'unit(px,%){1,4}',
+    'inner-border-right': 'string',
+    'inner-border-top': 'string',
     padding: 'unit(px,%){1,4}',
     'vertical-align': 'enum(top,bottom,middle)',
     width: 'unit(px,%)',
@@ -30,8 +39,11 @@ export default class MjColumn extends BodyComponent {
     const { containerWidth: parentWidth } = this.context
     const { nonRawSiblings } = this.props
     const { borders, paddings } = this.getBoxWidths()
+    const innerBorders =
+      this.getShorthandAttrValue('inner-border', 'left') +
+      this.getShorthandAttrValue('inner-border', 'right')
 
-    const allPaddings = paddings + borders
+    const allPaddings = paddings + borders + innerBorders
 
     let containerWidth =
       this.getAttribute('width') ||
@@ -42,8 +54,9 @@ export default class MjColumn extends BodyComponent {
     })
 
     if (unit === '%') {
-      containerWidth = `${parseFloat(parentWidth) * parsedWidth / 100 -
-        allPaddings}px`
+      containerWidth = `${
+        (parseFloat(parentWidth) * parsedWidth) / 100 - allPaddings
+      }px`
     } else {
       containerWidth = `${parsedWidth - allPaddings}px`
     }
@@ -76,7 +89,17 @@ export default class MjColumn extends BodyComponent {
         width: this.getMobileWidth(),
       },
       table: {
-        ...(this.hasGutter() ? {} : tableStyle),
+        ...(this.hasGutter()
+          ? {
+              'background-color': this.getAttribute('inner-background-color'),
+              border: this.getAttribute('inner-border'),
+              'border-bottom': this.getAttribute('inner-border-bottom'),
+              'border-left': this.getAttribute('inner-border-left'),
+              'border-radius': this.getAttribute('inner-border-radius'),
+              'border-right': this.getAttribute('inner-border-right'),
+              'border-top': this.getAttribute('inner-border-top'),
+            }
+          : tableStyle),
       },
       tdOutlook: {
         'vertical-align': this.getAttribute('vertical-align'),
@@ -101,7 +124,8 @@ export default class MjColumn extends BodyComponent {
 
     if (mobileWidth !== 'mobileWidth') {
       return '100%'
-    } else if (width === undefined) {
+    }
+    if (width === undefined) {
       return `${parseInt(100 / nonRawSiblings, 10)}%`
     }
 
@@ -126,7 +150,7 @@ export default class MjColumn extends BodyComponent {
     })
 
     if (unit === '%') {
-      return `${parseFloat(containerWidth) * parsedWidth / 100}px`
+      return `${(parseFloat(containerWidth) * parsedWidth) / 100}px`
     }
     return `${parsedWidth}px`
   }
@@ -157,10 +181,10 @@ export default class MjColumn extends BodyComponent {
 
     const { parsedWidth, unit } = this.getParsedWidth()
     const formattedClassNb = parsedWidth.toString().replace('.', '-')
-    
+
     switch (unit) {
       case '%':
-          className = `mj-column-per-${formattedClassNb}`
+        className = `mj-column-per-${formattedClassNb}`
         break
 
       case 'px':
@@ -185,7 +209,7 @@ export default class MjColumn extends BodyComponent {
       'padding-left',
       'padding-right',
       'padding-top',
-    ].some(attr => this.getAttribute(attr) != null)
+    ].some((attr) => this.getAttribute(attr) != null)
   }
 
   renderGutter() {
@@ -224,38 +248,40 @@ export default class MjColumn extends BodyComponent {
           width: '100%',
         })}
       >
-        ${this.renderChildren(children, {
-          renderer: (
-            component, // eslint-disable-line no-confusing-arrow
-          ) =>
-            component.constructor.isRawElement()
-              ? component.render()
-              : `
-            <tr>
-              <td
-                ${component.htmlAttributes({
-                  align: component.getAttribute('align'),
-                  'vertical-align': component.getAttribute('vertical-align'),
-                  class: component.getAttribute('css-class'),
-                  style: {
-                    background: component.getAttribute(
-                      'container-background-color',
-                    ),
-                    'font-size': '0px',
-                    padding: component.getAttribute('padding'),
-                    'padding-top': component.getAttribute('padding-top'),
-                    'padding-right': component.getAttribute('padding-right'),
-                    'padding-bottom': component.getAttribute('padding-bottom'),
-                    'padding-left': component.getAttribute('padding-left'),
-                    'word-break': 'break-word',
-                  },
-                })}
-              >
-                ${component.render()}
-              </td>
-            </tr>
-          `,
-        })}
+        <tbody>
+          ${this.renderChildren(children, {
+            renderer: (component) =>
+              component.constructor.isRawElement()
+                ? component.render()
+                : `
+              <tr>
+                <td
+                  ${component.htmlAttributes({
+                    align: component.getAttribute('align'),
+                    'vertical-align': component.getAttribute('vertical-align'),
+                    class: component.getAttribute('css-class'),
+                    style: {
+                      background: component.getAttribute(
+                        'container-background-color',
+                      ),
+                      'font-size': '0px',
+                      padding: component.getAttribute('padding'),
+                      'padding-top': component.getAttribute('padding-top'),
+                      'padding-right': component.getAttribute('padding-right'),
+                      'padding-bottom': component.getAttribute(
+                        'padding-bottom',
+                      ),
+                      'padding-left': component.getAttribute('padding-left'),
+                      'word-break': 'break-word',
+                    },
+                  })}
+                >
+                  ${component.render()}
+                </td>
+              </tr>
+            `,
+          })}
+        </tbody>
       </table>
     `
   }

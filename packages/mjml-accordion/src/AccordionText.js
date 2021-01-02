@@ -1,12 +1,17 @@
 import { BodyComponent } from 'mjml-core'
 
 export default class MjAccordionText extends BodyComponent {
+  static componentName = 'mj-accordion-text'
+
   static endingTag = true
 
   static allowedAttributes = {
     'background-color': 'color',
     'font-size': 'unit(px)',
     'font-family': 'string',
+    'font-weight': 'string',
+    'letter-spacing': 'unitWithNegative(px,em)',
+    'line-height': 'unit(px,%,)',
     color: 'color',
     'padding-bottom': 'unit(px,%)',
     'padding-left': 'unit(px,%)',
@@ -17,6 +22,7 @@ export default class MjAccordionText extends BodyComponent {
 
   static defaultAttributes = {
     'font-size': '13px',
+    'line-height': '1',
     padding: '16px',
   }
 
@@ -26,6 +32,9 @@ export default class MjAccordionText extends BodyComponent {
         background: this.getAttribute('background-color'),
         'font-size': this.getAttribute('font-size'),
         'font-family': this.getAttribute('font-family'),
+        'font-weight': this.getAttribute('font-weight'),
+        'letter-spacing': this.getAttribute('letter-spacing'),
+        'line-height': this.getAttribute('line-height'),
         color: this.getAttribute('color'),
         'padding-bottom': this.getAttribute('padding-bottom'),
         'padding-left': this.getAttribute('padding-left'),

@@ -6,6 +6,8 @@ import widthParser from 'mjml-core/lib/helpers/widthParser'
 const makeBackgroundString = flow(filter(identity), join(' '))
 
 export default class MjHero extends BodyComponent {
+  static componentName = 'mj-hero'
+
   static allowedAttributes = {
     mode: 'string',
     height: 'unit(px,%)',
@@ -13,6 +15,7 @@ export default class MjHero extends BodyComponent {
     'background-width': 'unit(px,%)',
     'background-height': 'unit(px,%)',
     'background-position': 'string',
+    'border-radius': 'string',
     'container-background-color': 'color',
     'inner-background-color': 'color',
     'inner-padding': 'unit(px,%){1,4}',
@@ -57,10 +60,9 @@ export default class MjHero extends BodyComponent {
     })
 
     if (unit === '%') {
-      currentContainerWidth = `${parseFloat(containerWidth) *
-        parsedWidth /
-        100 -
-        paddingSize}px`
+      currentContainerWidth = `${
+        (parseFloat(containerWidth) * parsedWidth) / 100 - paddingSize
+      }px`
     } else {
       currentContainerWidth = `${parsedWidth - paddingSize}px`
     }
@@ -74,8 +76,8 @@ export default class MjHero extends BodyComponent {
   getStyles() {
     const { containerWidth } = this.context
     const backgroundRatio = Math.round(
-      parseInt(this.getAttribute('background-height'), 10) /
-        parseInt(this.getAttribute('background-width'), 10) *
+      (parseInt(this.getAttribute('background-height'), 10) /
+        parseInt(this.getAttribute('background-width'), 10)) *
         100,
     )
 
@@ -101,6 +103,7 @@ export default class MjHero extends BodyComponent {
         background: this.getBackground(),
         'background-position': this.getAttribute('background-position'),
         'background-repeat': 'no-repeat',
+        'border-radius': this.getAttribute('border-radius'),
         padding: this.getAttribute('padding'),
         'padding-top': this.getAttribute('padding-top'),
         'padding-left': this.getAttribute('padding-left'),
@@ -208,9 +211,7 @@ export default class MjHero extends BodyComponent {
                 })}
               >
                 ${this.renderChildren(children, {
-                  renderer: (
-                    component, // eslint-disable-line no-confusing-arrow
-                  ) =>
+                  renderer: (component) =>
                     component.constructor.isRawElement()
                       ? component.render()
                       : `

@@ -1,4 +1,4 @@
-## mjml-text
+## mj-text
 
 This tag allows you to display text in your email.
 
@@ -25,7 +25,7 @@ This tag allows you to display text in your email.
 </p>
 
 <aside class="notice">
-  `MjText` can contain any HTML tag with any attributes. Don't forget to encode special characters to avoid unexpected behaviour from MJML's parser
+  `mj-text` elements can contain any HTML tag with any attributes.
 </aside>
 
  attribute                    | unit          | description                                 | default value
@@ -36,7 +36,7 @@ This tag allows you to display text in your email.
  font-style                   | string        | normal/italic/oblique                       | n/a
  font-weight                  | number        | text thickness                              | n/a
  line-height                  | px            | space between the lines                     | 1
- letter-spacing               | px            | letter spacing                              | none
+ letter-spacing               | px,em         | letter spacing                              | none
  height                       | px            | The height of the element                   | n/a
  text-decoration              | string        | underline/overline/line-through/none        | n/a
  text-transform               | string        | uppercase/lowercase/capitalize              | n/a

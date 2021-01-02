@@ -14,7 +14,7 @@ export default function buildMediaQueriesTags(
     mediaQueries,
     (mediaQuery, className) => `.${className} ${mediaQuery}`,
   )
-  const owaQueries = map(baseMediaQueries, mq => `[owa] ${mq}`)
+  const owaQueries = map(baseMediaQueries, (mq) => `[owa] ${mq}`)
 
   return `
     <style type="text/css">
@@ -22,8 +22,10 @@ export default function buildMediaQueriesTags(
         ${baseMediaQueries.join('\n')}
       }
     </style>
-    ${forceOWADesktop
-      ? `<style type="text/css">\n${owaQueries.join('\n')}\n</style>`
-      : ``}
+    ${
+      forceOWADesktop
+        ? `<style type="text/css">\n${owaQueries.join('\n')}\n</style>`
+        : ``
+    }
   `
 }

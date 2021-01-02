@@ -3,12 +3,27 @@ import path from 'path'
 
 const includeRegexp = /<mj-include\s+path=['"](.*[.mjml]?)['"]\s*(\/>|>\s*<\/mj-include>)/g
 
-const ensureIncludeIsMJMLFile = file =>
+const ensureIncludeIsMJMLFile = (file) =>
   (file.trim().match(/.mjml/) && file) || `${file}.mjml`
-const error = e => console.error(e.stack || e) // eslint-disable-line no-console
+const error = (e) => console.error(e.stack || e) // eslint-disable-line no-console
 
-export default baseFile => {
+export default (baseFile, filePath) => {
   const filesIncluded = []
+
+  let filePathDirectory = ''
+  if (filePath) {
+    try {
+      const isFilePathDir = fs.lstatSync(filePath).isDirectory()
+
+      filePathDirectory = isFilePathDir ? filePath : path.dirname(filePath)
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        throw new Error('Specified filePath does not exist')
+      } else {
+        throw e
+      }
+    }
+  }
 
   const readIncludes = (dir, file, base) => {
     const currentFile = path.resolve(
@@ -16,7 +31,9 @@ export default baseFile => {
         ? path.join(dir, ensureIncludeIsMJMLFile(file))
         : ensureIncludeIsMJMLFile(file),
     )
+
     const currentDirectory = path.dirname(currentFile)
+
     const includes = new RegExp(includeRegexp)
 
     let content
@@ -30,13 +47,17 @@ export default baseFile => {
     let matchgroup = includes.exec(content)
     while (matchgroup != null) {
       const includedFile = ensureIncludeIsMJMLFile(matchgroup[1])
-      const includedFilePath = path.resolve(
-        path.join(currentDirectory, includedFile),
-      )
+
+      // when reading first level of includes we must join the path specified in filePath
+      // when reading further nested includes, just take parent dir as base
+      const targetDir =
+        filePath && file === baseFile ? filePathDirectory : currentDirectory
+
+      const includedFilePath = path.resolve(path.join(targetDir, includedFile))
 
       filesIncluded.push(includedFilePath)
 
-      readIncludes(path.dirname(currentFile), includedFile, currentFile)
+      readIncludes(targetDir, includedFile, currentFile)
       matchgroup = includes.exec(content)
     }
   }

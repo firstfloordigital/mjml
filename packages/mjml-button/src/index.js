@@ -3,6 +3,8 @@ import { BodyComponent } from 'mjml-core'
 import widthParser from 'mjml-core/lib/helpers/widthParser'
 
 export default class MjButton extends BodyComponent {
+  static componentName = 'mj-button'
+
   static endingTag = true
 
   static allowedAttributes = {
@@ -24,7 +26,7 @@ export default class MjButton extends BodyComponent {
     href: 'string',
     name: 'string',
     'inner-padding': 'unit(px,%){1,4}',
-    'letter-spacing': 'unitWithNegative(px,%)',
+    'letter-spacing': 'unitWithNegative(px,em)',
     'line-height': 'unit(px,%,)',
     'padding-bottom': 'unit(px,%)',
     'padding-left': 'unit(px,%)',
@@ -113,7 +115,6 @@ export default class MjButton extends BodyComponent {
     const innerPaddings =
       this.getShorthandAttrValue('inner-padding', 'left') +
       this.getShorthandAttrValue('inner-padding', 'right')
-
 
     return `${parsedWidth - innerPaddings - borders}px`
   }

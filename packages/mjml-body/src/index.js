@@ -1,8 +1,10 @@
 import { BodyComponent } from 'mjml-core'
 
 export default class MjBody extends BodyComponent {
+  static componentName = 'mj-body'
+
   static allowedAttributes = {
-    width: 'unit(px,%)',
+    width: 'unit(px)',
     'background-color': 'color',
   }
 

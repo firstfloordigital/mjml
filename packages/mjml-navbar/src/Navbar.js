@@ -6,6 +6,8 @@ import conditionalTag, {
 } from 'mjml-core/lib/helpers/conditionalTag'
 
 export default class MjNavbar extends BodyComponent {
+  static componentName = 'mj-navbar'
+
   static allowedAttributes = {
     align: 'enum(left,center,right)',
     'base-url': 'string',
@@ -22,7 +24,7 @@ export default class MjNavbar extends BodyComponent {
     'ico-padding-top': 'unit(px,%)',
     'ico-padding-right': 'unit(px,%)',
     'ico-padding-bottom': 'unit(px,%)',
-    'padding': 'unit(px,%){1,4}',
+    padding: 'unit(px,%){1,4}',
     'padding-left': 'unit(px,%)',
     'padding-top': 'unit(px,%)',
     'padding-right': 'unit(px,%)',
@@ -47,7 +49,7 @@ export default class MjNavbar extends BodyComponent {
     'ico-line-height': '30px',
   }
 
-  headStyle = breakpoint =>
+  headStyle = (breakpoint) =>
     `
       noinput.mj-menu-checkbox { display:block!important; max-height:none!important; visibility:visible!important; }
 
@@ -149,9 +151,11 @@ export default class MjNavbar extends BodyComponent {
 
   render() {
     return `
-        ${this.getAttribute('hamburger') === 'hamburger'
-          ? this.renderHamburger()
-          : ''}
+        ${
+          this.getAttribute('hamburger') === 'hamburger'
+            ? this.renderHamburger()
+            : ''
+        }
         <div
           ${this.htmlAttributes({
             class: 'mj-inline-links',

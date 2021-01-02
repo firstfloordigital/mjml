@@ -1,11 +1,22 @@
-import { find, get, identity, map, omit, reduce, isObject, each } from 'lodash'
+import {
+  find,
+  get,
+  identity,
+  map,
+  omit,
+  reduce,
+  isObject,
+  each,
+  isEmpty,
+} from 'lodash'
 import path from 'path'
 import juice from 'juice'
 import { html as htmlBeautify } from 'js-beautify'
 import { minify as htmlMinify } from 'html-minifier'
+import cheerio from 'cheerio'
 
 import MJMLParser from 'mjml-parser-xml'
-import MJMLValidator from 'mjml-validator'
+import MJMLValidator, { dependencies } from 'mjml-validator'
 import { handleMjml3 } from 'mjml-migrate'
 
 import components, { initComponent, registerComponent } from './components'
@@ -16,7 +27,12 @@ import minifyOutlookConditionnals from './helpers/minifyOutlookConditionnals'
 import defaultSkeleton from './helpers/skeleton'
 import { initializeType } from './types/type'
 
-import handleMjmlConfig from './helpers/mjmlconfig'
+import handleMjmlConfig, {
+  readMjmlConfig,
+  handleMjmlConfigComponents,
+} from './helpers/mjmlconfig'
+
+const isNode = require('detect-node')
 
 class ValidationError extends Error {
   constructor(message, errors) {
@@ -30,7 +46,7 @@ export default function mjml2html(mjml, options = {}) {
   let content = ''
   let errors = []
 
-  if (typeof options.skeleton === 'string') {
+  if (isNode && typeof options.skeleton === 'string') {
     /* eslint-disable global-require */
     /* eslint-disable import/no-dynamic-require */
     options.skeleton = require(options.skeleton.charAt(0) === '.'
@@ -38,6 +54,31 @@ export default function mjml2html(mjml, options = {}) {
       : options.skeleton)
     /* eslint-enable global-require */
     /* eslint-enable import/no-dynamic-require */
+  }
+
+  let packages = {}
+  let confOptions = {}
+  let mjmlConfigOptions = {}
+  let error = null
+  let componentRootPath = null
+
+  if ((isNode && options.useMjmlConfigOptions) || options.mjmlConfigPath) {
+    const mjmlConfigContent = readMjmlConfig(options.mjmlConfigPath)
+
+    ;({
+      mjmlConfig: { packages, options: confOptions },
+      componentRootPath,
+      error,
+    } = mjmlConfigContent)
+
+    if (options.useMjmlConfigOptions) {
+      mjmlConfigOptions = confOptions
+    }
+  }
+
+  // if mjmlConfigPath is specified then we need to register components it on each call
+  if (isNode && !error && options.mjmlConfigPath) {
+    handleMjmlConfigComponents(packages, componentRootPath, registerComponent)
   }
 
   const {
@@ -54,23 +95,28 @@ export default function mjml2html(mjml, options = {}) {
     keepComments,
     minify = false,
     minifyOptions = {},
+    ignoreIncludes = false,
     juiceOptions = {},
     juicePreserveTags = null,
     skeleton = defaultSkeleton,
     validationLevel = 'soft',
     filePath = '.',
-    mjmlConfigPath = null,
+    actualPath = '.',
     noMigrateWarn = false,
-  } = options
-
-  // if mjmlConfigPath is specified then we need to handle it on each call
-  if (mjmlConfigPath) handleMjmlConfig(mjmlConfigPath, registerComponent)
+    preprocessors,
+  } = {
+    ...mjmlConfigOptions,
+    ...options,
+  }
 
   if (typeof mjml === 'string') {
     mjml = MJMLParser(mjml, {
       keepComments,
       components,
       filePath,
+      actualPath,
+      preprocessors,
+      ignoreIncludes,
     })
   }
 
@@ -82,6 +128,7 @@ export default function mjml2html(mjml, options = {}) {
     classes: {},
     classesDefault: {},
     defaultAttributes: {},
+    htmlAttributes: {},
     fonts,
     inlineStyle: [],
     headStyle: {},
@@ -97,6 +144,7 @@ export default function mjml2html(mjml, options = {}) {
 
   const validatorOptions = {
     components,
+    dependencies,
     initializeType,
   }
 
@@ -110,7 +158,7 @@ export default function mjml2html(mjml, options = {}) {
       if (errors.length > 0) {
         throw new ValidationError(
           `ValidationError: \n ${errors
-            .map(e => e.formattedMessage)
+            .map((e) => e.formattedMessage)
             .join('\n')}`,
           errors,
         )
@@ -150,7 +198,7 @@ export default function mjml2html(mjml, options = {}) {
     }
   }
 
-  const applyAttributes = mjml => {
+  const applyAttributes = (mjml) => {
     const parse = (mjml, parentMjClass = '') => {
       const { attributes, tagName, children } = mjml
       const classes = get(mjml.attributes, 'mj-class', '').split(' ')
@@ -195,7 +243,7 @@ export default function mjml2html(mjml, options = {}) {
         globalAttributes: {
           ...globalDatas.defaultAttributes['mj-all'],
         },
-        children: map(children, mjml => parse(mjml, nextParentMjClass)),
+        children: map(children, (mjml) => parse(mjml, nextParentMjClass)),
       }
     }
 
@@ -214,7 +262,7 @@ export default function mjml2html(mjml, options = {}) {
     addComponentHeadSyle(headStyle) {
       globalDatas.componentsHeadStyle.push(headStyle)
     },
-    setBackgroundColor: color => {
+    setBackgroundColor: (color) => {
       globalDatas.backgroundColor = color
     },
     processing: (node, context) => processing(node, context, applyAttributes),
@@ -232,18 +280,18 @@ export default function mjml2html(mjml, options = {}) {
               ...params[1],
             }
           } else {
+            // eslint-disable-next-line prefer-destructuring
             globalDatas[attr][params[0]] = params[1]
           }
         } else {
+          // eslint-disable-next-line prefer-destructuring
           globalDatas[attr] = params[0]
         }
       } else {
         throw Error(
-          `An mj-head element add an unkown head attribute : ${attr} with params ${Array.isArray(
-            params,
-          )
-            ? params.join('')
-            : params}`,
+          `An mj-head element add an unkown head attribute : ${attr} with params ${
+            Array.isArray(params) ? params.join('') : params
+          }`,
         )
       }
     },
@@ -253,8 +301,23 @@ export default function mjml2html(mjml, options = {}) {
 
   content = processing(mjBody, bodyHelpers, applyAttributes)
 
-  if (minify && minify !== 'false') {
-    content = minifyOutlookConditionnals(content)
+  content = minifyOutlookConditionnals(content)
+
+  if (!isEmpty(globalDatas.htmlAttributes)) {
+    const $ = cheerio.load(content, {
+      xmlMode: true, // otherwise it may move contents that aren't in any tag
+      decodeEntities: false, // won't escape special characters
+    })
+
+    each(globalDatas.htmlAttributes, (data, selector) => {
+      each(data, (value, attrName) => {
+        $(selector).each(function getAttr() {
+          $(this).attr(attrName, value || '')
+        })
+      })
+    })
+
+    content = $.root().html()
   }
 
   content = skeleton({
@@ -278,17 +341,27 @@ export default function mjml2html(mjml, options = {}) {
     })
   }
 
-  content =
-    beautify && beautify !== 'false'
-      ? htmlBeautify(content, {
-          indent_size: 2,
-          wrap_attributes_indent_size: 2,
-          max_preserve_newline: 0,
-          preserve_newlines: false,
-        })
-      : content
+  content = mergeOutlookConditionnals(content)
 
-  if (minify && minify !== 'false') {
+  if (beautify) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '"beautify" option is deprecated in mjml-core and only available in mjml cli.',
+    )
+    content = htmlBeautify(content, {
+      indent_size: 2,
+      wrap_attributes_indent_size: 2,
+      max_preserve_newline: 0,
+      preserve_newlines: false,
+    })
+  }
+
+  if (minify) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '"minify" option is deprecated in mjml-core and only available in mjml cli.',
+    )
+
     content = htmlMinify(content, {
       collapseWhitespace: true,
       minifyCSS: false,
@@ -298,16 +371,24 @@ export default function mjml2html(mjml, options = {}) {
     })
   }
 
-  content = mergeOutlookConditionnals(content)
-
   return {
     html: content,
+    json: mjml,
     errors,
   }
 }
 
-handleMjmlConfig(process.cwd(), registerComponent)
+if (isNode) {
+  handleMjmlConfig(process.cwd(), registerComponent)
+}
 
-export { components, initComponent, registerComponent, suffixCssClasses, handleMjmlConfig, initializeType }
+export {
+  components,
+  initComponent,
+  registerComponent,
+  suffixCssClasses,
+  handleMjmlConfig,
+  initializeType,
+}
 
 export { BodyComponent, HeadComponent } from './createComponent'

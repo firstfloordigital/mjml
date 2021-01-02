@@ -1,16 +1,16 @@
-import forEach from 'lodash/forEach'
-import omit from 'lodash/omit'
-import reduce from 'lodash/reduce'
+import { forEach, omit, reduce } from 'lodash'
 
 import { HeadComponent } from 'mjml-core'
 
 export default class MjAttributes extends HeadComponent {
+  static componentName = 'mj-attributes'
+
   handler() {
     const { add } = this.context
 
     const { children } = this.props
 
-    forEach(children, child => {
+    forEach(children, (child) => {
       const { tagName, attributes, children } = child
 
       if (tagName === 'mj-class') {
